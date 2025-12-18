@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>드레스업 화면 (재도전 옷장)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Single+Day&display=swap" rel="stylesheet">
+
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width:100vw;
+    height:100vh;
+    overflow:hidden;
+    background:#fff;
+    position:relative;
+    user-select:none;
+  }
+
+  /* =======================
+     🔊 BGM 토글
+  ======================= */
+  #bgmToggle {
+    position: absolute;
+    top: 2%;
+    right: 2%;
+    width: 100px;
+    height: 100px;
+    cursor: pointer;
+    z-index: 1000;
+  }
+  #bgmToggle img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  /* =======================
+     로딩
+  ======================= */
+  #loadingScreen {
+    position:fixed;
+    width:100%; height:100%;
+    top:0; left:0;
+    background:url('closet back.png') no-repeat center/cover;
+    display:flex; justify-content:center; align-items:center;
+    flex-direction:column; z-index:999;
+  }
+  #loadingBarWrap {
+    width:30%;
+    height:25px;
+    background:rgba(255,255,255,0.6);
+    border-radius:20px;
+    overflow:hidden;
+  }
+  #loadingBar {
+    width:0%;
+    height:100%;
+    background:#FF00BB;
+    border-radius:20px;
+    animation:fillBar 1.2s forwards ease-in-out;
+  }
+  @keyframes fillBar { 0%{width:0%} 100%{width:100%} }
+
+  /* =======================
+     드레스업 화면
+  ======================= */
+  #dressupScreen {
+    display:none;
+    position:relative;
+    width:100%; height:100%;
+  }
+
+  #roomBg {
+    position:absolute;
+    width:100%; height:100%;
+    top:0; left:0;
+    object-fit:cover;
+    z-index:1;
+  }
+
+  /* =======================
+     옷장
+  ======================= */
+  #closetWrapper {
+    position: relative;
+    bottom:0%; left:66%;
+    width:46%;
+    transform:translateX(-50%);
+    z-index:5;
+    pointer-events:auto;
+  }
+  #closetImg {
+    width:100%;
+    display:block;
+    pointer-events:none;
+  }
+
+  /* =======================
+     ✅ 캐릭터+의상 고정 컨테이너
+  ======================= */
+  #playerWrapper{
+    position:absolute;
+    left:22%;
+    bottom:0%;
+    width:201px;
+    height:700px;
+    transform:translateX(-50%);
+    z-index:10;
+    pointer-events:none;
+  }
+
+  #playerBase {
+    position:absolute;
+    left:50%;
+    bottom:0%;
+    width:100%;
+    transform:translateX(-50%);
+    z-index:10;
+  }
+
+  #wearWig, #wearDress, #wearTop, #wearBottom, #wearShoes, #wearAcc{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    pointer-events:none;
+  }
+
+  /* ---- 착용 위치(너가 이미 맞춰둔 값 유지) ---- */
+  #wearWig    { top:-27%; height:335px; z-index:22; }
+  #wearDress  { top:-4%;  height:450px; z-index:20; }
+  #wearTop    { top:-4%;  height:270px; z-index:20; }
+  #wearBottom { top:23%;  height:440px; z-index:19; }
+  #wearShoes  { bottom:-2%; height:350px; z-index:18; }
+  #wearAcc    { top:-6%;  height:110px; z-index:21; }
+
+  /* =======================
+     가발 슬롯
+  ======================= */
+  #wigSlot {
+    position:absolute;
+    width:100%;
+    height:180px;
+    top:18.5%;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:50;
+    pointer-events:auto;
+  }
+
+  .arrowBtn {
+    width:40px; height:40px;
+    background:transparent;
+    border:none; cursor:pointer;
+    color:#F70093;
+    font-size:30px;
+    z-index:200;
+  }
+
+  .wigListWrapper {
+    width:560px; height:140px;
+    overflow:hidden; position:relative;
+    margin:0 10px;
+  }
+
+  .wigList {
+    position:absolute;
+    display:flex;
+    gap:7px;
+    left:0px;
+    transition:0.3s ease;
+    list-style:none;
+  }
+
+  .wigItem { width:130px; height:130px; position:relative; }
+  .wigSlotBg { position:absolute; width:130px; height:130px; z-index:1; }
+  .wigImg { width:120px; height:120px; position:absolute; top:5px; left:5px; cursor:pointer; z-index:5; }
+
+  /* =======================
+     원피스·상의·악세사리
+  ======================= */
+  #dressSlot{
+    position:absolute;
+    left:15%;
+    top:40%;
+    width:40%;
+    display:flex;
+    z-index:60;
+  }
+  .dressImg { width:120px; margin-left:-80px; }
+
+  #topSlot {
+    position:absolute;
+    left:28%;
+    top:40%;
+    width:40%;
+    display:flex;
+    z-index:60;
+  }
+  .topImg { width:120px; margin-left:-50px; }
+
+  #accSlot {
+    position:absolute;
+    left:67%;
+    top:45%;
+    width:20%;
+    display:flex;
+    gap:10px;
+    z-index:60;
+  }
+  .accImg { width:120px; margin-left:-35px; }
+
+  /* =======================
+     하의·신발
+  ======================= */
+  #bottomSlot {
+    position:absolute;
+    left:15%;
+    top:60%;
+    width:30%;
+    display:flex;
+    z-index:59;
+  }
+  .bottomImg { width:110px; margin-left:-10px; }
+
+  #shoesSlot {
+    position:absolute;
+    left:68%;
+    top:58%;
+    width:10%;
+    display:flex;
+    z-index:60;
+  }
+  .shoesImg {
+    width:40px;
+    max-width:100px;
+    margin-left:-50px;
+  }
+
+  .dressImg, .topImg, .bottomImg, .shoesImg, .accImg {
+    width:120px;
+    cursor:pointer;
+  }
+
+  /* =======================
+     컨트롤 버튼
+  ======================= */
+  #controlButtons {
+    position:absolute;
+    top:100px;
+    left:-50px;
+    width:100%;
+    padding:8px 12px;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    z-index:70;
+    pointer-events:none;
+  }
+  .controlBtn {
+    width:45px;
+    height:45px;
+    cursor:pointer;
+    pointer-events:auto;
+  }
+
+  /* =======================
+     🔹 외출하기 버튼
+  ======================= */
+  #goOutWrapper {
+    position:absolute;
+    left:90%;
+    bottom:40px;
+    transform:translateX(-50%);
+    z-index:80;
+    display:none;
+  }
+
+  #goOutButton {
+    font-family: 'Single Day', cursive;
+    width:220px;
+    padding:10px 25px;
+    background:#00DDFF;
+    border:7px solid #C0F9F6;
+    border-radius:999px;
+    font-size:40px;
+    font-weight:1000;
+    color:#FF8BE0;
+    cursor:pointer;
+    box-shadow:0 4px 8px rgba(0,0,0,0.15);
+    text-shadow:
+      -2px  0   0 #ffffff,
+       2px  0   0 #ffffff,
+       0    2px 0 #ffffff,
+       0   -2px 0 #ffffff,
+      -2px -2px 0 #ffffff,
+       2px -2px 0 #ffffff,
+      -2px  2px 0 #ffffff,
+       2px  2px 0 #ffffff;
+  }
+
+  /* 빈 src 숨김 */
+  #wearDress[src=""],
+  #wearTop[src=""],
+  #wearBottom[src=""],
+  #wearShoes[src=""],
+  #wearAcc[src=""],
+  #wearWig[src=""] {
+    display:none !important;
+  }
+
+  /* ✅ 가발 애벌레(트라우마) 연출 레이어 */
+  #wigCaterpillarFx{
+    position:absolute;
+    inset:0;
+    z-index:999;          /* wearWig보다 위 */
+    pointer-events:none;
+  }
+
+  /* 가발 한 마디(?) */
+  #wigCaterpillarFx .wigSeg{
+    position:absolute;
+    left:50%;
+    transform:translateX(-50%);
+    width:180px;          /* 필요하면 조절 */
+    opacity:1;
+    animation: wigSegFlash 0.55s steps(1, end) forwards;
+  }
+
+  /* 살짝 튀었다가 사라지는 느낌 */
+  @keyframes wigSegPop{
+    0%   { opacity:1; }
+    20%  { opacity:1; }
+    100% { opacity:0; }
+  }
+
+  /* =======================
+   ✅ BGM 슬로우 시 화면 효과
+======================= */
+
+/* ✅ 단순 오버레이 기본 상태 */
+#bgmGlitchOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  pointer-events: none;
+  opacity: 0;
+
+  /* ✅ 여기만 원하는 색으로 */
+  background: rgba(80, 0, 23, 1);
+
+  /* ✅ 글리치 느낌 요소 제거 */
+  mix-blend-mode: color-burn;
+  filter: none;
+  animation: none;
+}
+
+/* ✅ 슬로우 상태일 때만 오버레이 ON */
+body.bgm-slow #bgmGlitchOverlay{
+  opacity: 1;
+  transition: opacity 0.12s ease;
+}
+
+/* 슬로우 상태에서만 오버레이 ON */
+body.bgm-slow #bgmGlitchOverlay{
+  opacity:0.9;
+  animation: glitchPulse 0.18s steps(1,end) infinite;
+}
+
+/* =======================
+   ✅ 드레스 트라우마 오버레이 (이미지)
+  ======================= */
+  #dressTraumaOverlay{
+    position:fixed;
+    inset:0;
+    z-index:950;
+    pointer-events:auto;
+  }
+
+  @keyframes traumaFlash{
+  0% { filter: contrast(1) brightness(1); }
+  10%{ filter: contrast(1.4) brightness(1.15); }
+  20%{ filter: contrast(1) brightness(1); }
+  30%{ filter: contrast(1.3) brightness(1.1); }
+  100%{ filter: contrast(1) brightness(1); }
+}
+
+#dressTraumaOverlay{
+  animation: traumaFlash 0.25s steps(1,end) 1;
+}
+
+  #dressTraumaImg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    z-index:1;
+  }
+
+  /* 대화창은 이미지 위로 */
+  #dressTraumaDialogue{
+    z-index:5;
+  }
+
+
+  /* ✅ 드레스 트라우마 대화창 UI */
+.dialogueBox{
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  width: 95%;
+  max-width: 1400px;
+  min-height: 200px;
+  padding: 25px 30px;
+  background: linear-gradient(90deg,#6B0B61,#360331);
+  border-radius: 20px;
+  outline:3px dotted #FEE5FF;outline-offset:-5px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  font-family: 'Single Day', cursive;
+  cursor: pointer;
+  z-index: 5; /* 이미지 위 */
+}
+
+#dressTraumaName{
+  font-size: 30px;
+  font-weight:bold;
+  color: #E300EE;
+   text-shadow:-3px 0 #FFFFFF,3px 0 #FFFFFF,0 -3px #FFFFFF,0 3px #FFFFFF,
+                -3px -3px #FFFFFF,-3px 3px #FFFFFF,3px -3px #FFFFFF,3px 3px #FFFFFF;
+  margin-bottom:8px;white-space:nowrap;
+}
+
+#dressTraumaText{
+  font-size: 26px;
+  color: #FFFFFF;
+  line-height: 1.5;
+  white-space:normal;word-break:keep-all;
+}
+
+/* =======================
+   💀 파멸 엔딩 오버레이
+======================= */
+#doomOverlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  display:none;
+  background:#000;
+}
+
+#doomVideo{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:none;      /* 처음에는 숨겨두고 나중에 켠다 */
+}
+
+#doomDialogue{
+  z-index:5;  /* 영상 위 대화창 */
+}
+
+/* =======================
+   🔔 외출 불가 알림
+======================= */
+#goOutAlert{
+  position:absolute;
+  top:16px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 22px;
+  background:rgba(0,0,0,0.78);
+  color:#FFFFFF;
+  font-family:'Single Day', cursive;
+  font-size:22px;
+  border-radius:999px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.25);
+  z-index:999;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.25s ease;
+}
+
+#restartButton{
+  position:absolute;
+  bottom:40px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:10px 24px;
+  border-radius:999px;
+  border:3px solid #ffffff;
+  background:#FF2F7B;
+  color:#ffffff;
+  font-family:'Single Day', cursive;
+  font-size:24px;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(0,0,0,0.35);
+  display:none; /* 엔딩 마지막에만 보여줌 */
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- 🔊 BGM 오디오 -->
+<audio id="bgm" loop>
+  <source src="No Copyright Music NCS).mp3" type="audio/mpeg">
+</audio>
+
+<!-- 🔊 BGM 오디오 (역재생 버전) -->
+<audio id="bgmReverse" loop>
+  <source src="re.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 🔊 BGM 토글 버튼 -->
+<div id="bgmToggle">
+  <img id="bgmIcon" src="Group 2085666441.png">
+</div>
+
+<!-- 로딩 -->
+<div id="loadingScreen">
+  <img id="loadingText" src="Loading....png">
+  <div id="loadingBarWrap"><div id="loadingBar"></div></div>
+</div>
+
+<!-- 메인 -->
+<div id="dressupScreen">
+
+  <img id="roomBg" src="Frame 2087327023.png">
+
+  <div id="closetWrapper">
+    <img id="closetImg" src="Group 2085666421.png">
+
+    <!-- 컨트롤 -->
+    <div id="controlButtons">
+      <img id="undoBtn"  class="controlBtn" src="Group 2085666422.png"  alt="undo">
+      <img id="resetBtn" class="controlBtn" src="Group 2085666424.png" alt="reset">
+    </div>
+
+    <!-- 가발 슬롯 -->
+    <div id="wigSlot">
+      <button id="leftArrow" class="arrowBtn">◀</button>
+
+      <div class="wigListWrapper">
+        <ul class="wigList" id="wigList">
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="basic hair.png"></li>
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="gold ponytail.png"></li>
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="pink hair 2.png"></li>
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="hairbun.png"></li>
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="long hair.png"></li>
+          <li class="wigItem"><img class="wigSlotBg" src="Group2085666388.png"><img class="wigImg" src="red hair.png"></li>
+        </ul>
+      </div>
+
+      <button id="rightArrow" class="arrowBtn">▶</button>
+    </div>
+
+    <!-- 원피스 -->
+    <div id="dressSlot">
+      <img class="dressImg" src="dress1.png">
+      <img class="dressImg" src="dress2.png">
+    </div>
+
+    <!-- 상의 -->
+    <div id="topSlot">
+      <img class="topImg" src="top1.png">
+      <img class="topImg" src="top2.png">
+      <img class="topImg" src="top3.png">
+      <img class="topImg" src="top4.png">
+    </div>
+
+    <!-- 악세서리 -->
+    <div id="accSlot">
+      <img class="accImg" src="acc1.png">
+      <img class="accImg" src="acc2.png">
+      <img class="accImg" src="acc3.png">
+      <img class="accImg" src="acc4.png">
+    </div>
+
+    <!-- 하의 -->
+    <div id="bottomSlot">
+      <img class="bottomImg" src="bottom1.png">
+      <img class="bottomImg" src="bottom2.png">
+      <img class="bottomImg" src="bottom3.png">
+    </div>
+
+    <!-- 신발 -->
+    <div id="shoesSlot">
+      <img class="shoesImg" src="shoes1.png">
+      <img class="shoesImg" src="shoes2.png">
+      <img class="shoesImg" src="shoes3.png">
+      <img class="shoesImg" src="shoes4.png">
+    </div>
+  </div>
+
+  <!-- ✅ 캐릭터+착용 레이어 -->
+  <div id="playerWrapper">
+    <img id="playerBase" src="Group 2085666411.png">
+    <img id="wearDress">
+    <img id="wearTop">
+    <img id="wearBottom">
+    <img id="wearShoes">
+    <img id="wearAcc">
+    <img id="wearWig">
+  </div>
+
+  <div id="bgmGlitchOverlay"></div>
+
+  <!-- ✅ 드레스 트라우마 오버레이 (이미지 버전) -->
+<div id="dressTraumaOverlay" style="display:none;">
+  <!-- ✅ 화면을 덮는 트라우마 이미지 -->
+  <img id="dressTraumaImg" src="Frame 2087327018.png" alt="">
+
+  <!-- ✅ 신발 트라우마 오버레이 -->
+<div id="shoesTraumaOverlay" style="display:none;">
+  <img id="shoesTraumaImg" src="Frame 2087327021.png" alt="">
+
+  <div id="shoesTraumaDialogue" class="dialogueBox" style="display:flex;">
+    <div id="shoesTraumaName"></div>
+    <div id="shoesTraumaText"></div>
+  </div>
+</div>
+
+<!-- ✅ 신발 트라우마 효과음(원하면) -->
+<audio id="shoesTraumaSfx" src="shoes-trauma-sfx.mp3" preload="auto"></audio>
+
+  <!-- ✅ 영상 위 대화창 느낌 그대로 -->
+  <div id="dressTraumaDialogue" class="dialogueBox" style="display:flex;">
+    <div id="dressTraumaName"></div>
+    <div id="dressTraumaText"></div>
+  </div>
+</div>
+
+<!-- 💀 파멸 엔딩 오버레이 -->
+<div id="doomOverlay">
+  <!-- 엔딩 영상 (자동재생/뮤트/루프 옵션 빼기) -->
+  <video id="doomVideo" src="hanging_rope.mp4"></video>
+
+  <!-- 먼저 나오는 대사창 -->
+  <div id="doomDialogue" class="dialogueBox" style="display:flex;">
+    <div id="doomName"></div>
+    <div id="doomText"></div>
+  </div>
+
+  <!-- 마지막에 뜨는 버튼 -->
+  <button id="restartButton">처음으로 돌아가기</button>
+</div>
+
+  <!-- 🔹 외출하기 버튼 -->
+  <div id="goOutWrapper">
+    <button id="goOutButton">외출하기</button>
+  </div>
+
+    <!-- 🔔 외출 불가 알림 -->
+  <div id="goOutAlert">볼품없는 생김새로는 외출할 수 없어요.</div>
+
+  <audio id="clickSfx" src="shine-7-268909.mp3"></audio>
+  <audio id="wigTraumaSfx" src="068304_no-signal-tv.mp3" preload="auto"></audio>
+  <audio id="dressTraumaSfx" src="horror-background-music-443137 (1).mp3" preload="auto"></audio>
+  <audio id="bgmSlowSfx" src="glitch-sfx-312910 (1).mp3" preload="auto"></audio>
+</div>
+
+<script>
+  /* =======================
+     SFX
+  ======================= */
+  const clickSfx = document.getElementById("clickSfx");
+  const playerName = localStorage.getItem("playerName") || "플레이어";
+  const wigTraumaSfx = document.getElementById("wigTraumaSfx");
+  const dressTraumaSfx = document.getElementById("dressTraumaSfx");
+  const bgmSlowSfx = document.getElementById("bgmSlowSfx");
+
+  let firstWigTraumaPlayed = false;
+
+  /* =======================
+     🔊 BGM 토글
+  ======================= */
+  const bgmAudio = document.getElementById('bgm');
+  const bgmToggle = document.getElementById('bgmToggle');
+  const bgmIcon = document.getElementById('bgmIcon');
+  let isBgmPlaying = false;
+
+  // 🔁 역재생 BGM
+  const bgmReverseAudio = document.getElementById('bgmReverse');
+
+  function playNormalBgm(){
+    if (!bgmAudio) return;
+
+  if (bgmReverseAudio) {
+    bgmReverseAudio.pause();
+    bgmReverseAudio.currentTime = 0;
+  }
+
+  bgmAudio.pause();
+  bgmAudio.currentTime = 0;
+  bgmAudio.play().catch(()=>{});
+}
+
+function playReverseBgm(){
+  if (!bgmReverseAudio) return;
+
+  // 정방향 중이면 끄기
+  if (bgmAudio) {
+    bgmAudio.pause();
+    bgmAudio.currentTime = 0;
+  }
+
+  bgmReverseAudio.pause();
+  bgmReverseAudio.currentTime = 0;
+  bgmReverseAudio.play().catch(()=>{});
+}
+  
+
+bgmToggle.addEventListener('click', () => {
+  if (isBgmPlaying) {
+    // 🔇 끌 때: 둘 다 정지
+    if (bgmAudio) bgmAudio.pause();
+    if (bgmReverseAudio) bgmReverseAudio.pause();
+
+    bgmIcon.src = "Group 2085666441.png";
+    isBgmPlaying = false;
+
+    stopRandomBgmSlowLoop();   // 타이머도 정지
+
+  } else {
+    // 🔊 켤 때: 항상 정방향으로 시작
+    playNormalBgm();
+    bgmIcon.src = "Group 2085666442.png";
+    isBgmPlaying = true;
+
+    startRandomBgmSlowLoop();  // 랜덤 정/역재생 루프 시작
+  }
+});
+
+  /* ✅ 첫 상호작용에서 자동 BGM 시작 */
+    function tryAutoPlayBgm() {
+    if (isBgmPlaying) return;
+
+    playNormalBgm();
+    isBgmPlaying = true;
+    bgmIcon.src = "Group 2085666442.png";
+
+    startRandomBgmSlowLoop();
+
+    document.removeEventListener("pointerdown", tryAutoPlayBgm);
+    document.removeEventListener("keydown", tryAutoPlayBgm);
+    document.removeEventListener("touchstart", tryAutoPlayBgm);
+  }
+
+  document.addEventListener("pointerdown", tryAutoPlayBgm, { once: true });
+  document.addEventListener("keydown", tryAutoPlayBgm, { once: true });
+  document.addEventListener("touchstart", tryAutoPlayBgm, { once: true });
+
+  /* =========================================
+   ✅ 랜덤 정/역재생 루프
+   - BGM이 켜져 있을 때만 작동
+========================================= */
+
+let bgmSlowTimer = null;
+let bgmSlowActive = false;
+let slowLoopSession = 0;
+let lastSlowSfxAt = 0;
+const SLOW_SFX_COOLDOWN = 1200;   // 글리치 SFX 쿨타임
+
+// 역/정 상태 유지 시간 (ms)
+const SLOW_MIN_MS = 5000;
+const SLOW_MAX_MS = 6500;
+
+// 다음 전환까지 대기 시간 (ms)
+const GAP_MIN_MS = 4500;
+const GAP_MAX_MS = 12000;
+
+function rand(min, max){
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// 역재생일 때 화면 붉게
+function applySlowVisual(on){
+  document.body.classList.toggle("bgm-slow", on);
+}
+
+function startRandomBgmSlowLoop(){
+  // 기존 루프 정리 + 새로운 세션 시작
+  stopRandomBgmSlowLoop();
+  const mySession = ++slowLoopSession;
+
+  function scheduleNext(){
+    if (mySession !== slowLoopSession) return;
+
+    if (!isBgmPlaying) {
+      // BGM 꺼져 있으면 잠깐 쉬고 다시 체크
+      bgmSlowTimer = setTimeout(scheduleNext, 800);
+      return;
+    }
+
+    const gap = rand(GAP_MIN_MS, GAP_MAX_MS);
+
+    bgmSlowTimer = setTimeout(() => {
+      if (mySession !== slowLoopSession) return;
+      if (!isBgmPlaying) { scheduleNext(); return; }
+
+      // 🔁 정방향 ↔ 역재생 토글
+      bgmSlowActive = !bgmSlowActive;
+
+      if (bgmSlowActive) {
+        // 🔥 역재생 ON
+        playReverseBgm();
+        applySlowVisual(true);
+
+        // 글리치 SFX 1번 (너가 원하면)
+        const now = Date.now();
+        if (bgmSlowSfx && (now - lastSlowSfxAt) > SLOW_SFX_COOLDOWN) {
+          lastSlowSfxAt = now;
+          bgmSlowSfx.currentTime = 0;
+          bgmSlowSfx.play().catch(()=>{});
+        }
+
+      } else {
+        // 🎧 다시 정방향
+        playNormalBgm();
+        applySlowVisual(false);
+      }
+
+      // 이번 상태 유지 시간
+      const duration = rand(SLOW_MIN_MS, SLOW_MAX_MS);
+
+      bgmSlowTimer = setTimeout(() => {
+        if (mySession !== slowLoopSession) return;
+        scheduleNext();
+      }, duration);
+
+    }, gap);
+  }
+
+  scheduleNext();
+}
+
+function stopRandomBgmSlowLoop(){
+  slowLoopSession++;
+
+  if (bgmSlowTimer) {
+    clearTimeout(bgmSlowTimer);
+    bgmSlowTimer = null;
+  }
+
+  bgmSlowActive = false;
+  applySlowVisual(false);
+
+  // BGM이 켜져 있으면 정방향으로 정리
+  if (isBgmPlaying) {
+    playNormalBgm();
+  } else {
+    if (bgmAudio) bgmAudio.pause();
+    if (bgmReverseAudio) bgmReverseAudio.pause();
+  }
+}
+
+
+  /* =======================
+     로딩 → 메인 표시
+  ======================= */
+  const loadingScreen  = document.getElementById("loadingScreen");
+  const dressupScreen  = document.getElementById("dressupScreen");
+
+  setTimeout(() => {
+    loadingScreen.style.display  = "none";
+    dressupScreen.style.display  = "block";
+  }, 900);
+
+  /* =======================
+     캐릭터 & 착용 레이어
+  ======================= */
+  const playerBase  = document.getElementById("playerBase");
+  const wearWig     = document.getElementById("wearWig");
+  const wearDress   = document.getElementById("wearDress");
+  const wearTop     = document.getElementById("wearTop");
+  const wearBottom  = document.getElementById("wearBottom");
+  const wearShoes   = document.getElementById("wearShoes");
+  const wearAcc     = document.getElementById("wearAcc");
+
+  /* =======================
+     컨트롤 버튼
+  ======================= */
+  const undoBtn  = document.getElementById("undoBtn");
+  const resetBtn = document.getElementById("resetBtn");
+
+  /* 외출하기 버튼 */
+  const goOutWrapper = document.getElementById("goOutWrapper");
+  const goOutButton  = document.getElementById("goOutButton");
+
+  /* 🔔 외출 불가 알림 DOM */
+const goOutAlert = document.getElementById("goOutAlert");
+
+// 💀 파멸 엔딩 DOM
+const doomOverlay  = document.getElementById("doomOverlay");
+const doomVideo    = document.getElementById("doomVideo");
+const doomDialogue = document.getElementById("doomDialogue");
+const doomName     = document.getElementById("doomName");
+const doomText     = document.getElementById("doomText");
+const restartButton = document.getElementById("restartButton");
+
+let doomStarted = false;
+
+// 알림 보여주는 함수
+function showGoOutAlert(){
+  if (!goOutAlert) return;
+
+  goOutAlert.style.opacity = "1";
+  goOutAlert.style.pointerEvents = "auto";
+
+  // 몇 초 뒤에 자동 숨기기
+  clearTimeout(goOutAlert._hideTimer);
+  goOutAlert._hideTimer = setTimeout(()=>{
+    goOutAlert.style.opacity = "0";
+    goOutAlert.style.pointerEvents = "none";
+  }, 2200); // 2.2초 정도 노출
+}
+
+// 💀 파멸 엔딩 대사
+const doomLines = [
+  { name: playerName, text: "이런 꼴로는 외출할 수 없어." },
+  { name: playerName, text: "살려줘…" }
+];
+
+// 1) 3초 후 실행되는 엔딩 시작: 대사 먼저
+function startDoomEnding(){
+  if (!doomOverlay || !doomDialogue) return;
+
+  // 기존 BGM 멈추기
+  if (bgmAudio) bgmAudio.pause();
+  if (bgmReverseAudio) bgmReverseAudio.pause();
+
+  // 엔딩 오버레이 켜기
+  doomOverlay.style.display = "block";
+
+  // 처음에는 대사창만 보이게, 영상은 숨김
+  doomDialogue.style.display = "flex";
+  if (doomVideo) doomVideo.style.display = "none";
+
+  let idx = 0;
+
+  function render(){
+    doomName.textContent = doomLines[idx].name;
+    doomText.textContent = doomLines[idx].text;
+  }
+  render();
+
+  // 대사창 클릭으로만 진행, 마지막 줄 후 영상 재생
+  doomDialogue.onclick = () => {
+    idx++;
+    if (idx >= doomLines.length){
+      doomDialogue.onclick = null;
+      doomDialogue.style.display = "none";  // 대사창 숨기기
+      playDoomVideo();                      // 이제 영상 시작
+      return;
+    }
+    render();
+  };
+}
+
+// 2) 실제 영상 재생 + 음성 ON + 끝나면 버튼 보이기
+function playDoomVideo(){
+  if (!doomVideo) return;
+
+  doomVideo.style.display = "block";
+  doomVideo.muted = false;       // 🔊 음소거 해제
+  doomVideo.currentTime = 0;
+  doomVideo.play().catch(()=>{});
+
+  // 영상이 끝나면 "처음으로 돌아가기" 버튼 표시
+  doomVideo.onended = () => {
+    if (restartButton) {
+      restartButton.style.display = "block";
+    }
+  };
+}
+
+  /* =======================
+     ✅ 가발 좌/우 이동
+  ======================= */
+  const leftArrow = document.getElementById("leftArrow");
+  const rightArrow = document.getElementById("rightArrow");
+  const wigList = document.getElementById("wigList");
+
+  const STEP = 140;
+
+  function clamp(val, min, max){ return Math.max(min, Math.min(max, val)); }
+
+  function getLimits(){
+    const wrapper = document.querySelector(".wigListWrapper");
+    const listWidth = wigList.scrollWidth;
+    const wrapWidth = wrapper.clientWidth;
+    const minLeft = Math.min(0, wrapWidth - listWidth);
+    const maxLeft = 0;
+    return { minLeft, maxLeft };
+  }
+
+  leftArrow.addEventListener("click", () => {
+    const currentLeft = parseInt(window.getComputedStyle(wigList).left) || 0;
+    const { minLeft, maxLeft } = getLimits();
+    wigList.style.left = clamp(currentLeft + STEP, minLeft, maxLeft) + "px";
+  });
+
+  rightArrow.addEventListener("click", () => {
+    const currentLeft = parseInt(window.getComputedStyle(wigList).left) || 0;
+    const { minLeft, maxLeft } = getLimits();
+    wigList.style.left = clamp(currentLeft - STEP, minLeft, maxLeft) + "px";
+  });
+
+  /* =======================
+     히스토리
+  ======================= */
+  let historyStack = [];
+
+  function getCurrentState() {
+    return {
+      wig:    wearWig.src   || "",
+      dress:  wearDress.src || "",
+      top:    wearTop.src   || "",
+      bottom: wearBottom.src|| "",
+      shoes:  wearShoes.src || "",
+      acc:    wearAcc.src   || ""
+    };
+  }
+
+  function applyState(state) {
+    wearWig.src    = state.wig    || "";
+    wearDress.src  = state.dress  || "";
+    wearTop.src    = state.top    || "";
+    wearBottom.src = state.bottom || "";
+    wearShoes.src  = state.shoes  || "";
+    wearAcc.src    = state.acc    || "";
+  }
+
+  function pushHistory() {
+    historyStack.push(getCurrentState());
+  }
+
+  window.addEventListener("load", () => {
+    pushHistory();
+  });
+
+  undoBtn.addEventListener("click", () => {
+    if (historyStack.length <= 1) return;
+    historyStack.pop();
+    applyState(historyStack[historyStack.length - 1]);
+  });
+
+  resetBtn.addEventListener("click", () => {
+    const emptyState = { wig:"", dress:"", top:"", bottom:"", shoes:"", acc:"" };
+    applyState(emptyState);
+    historyStack = [emptyState];
+
+    // ✅ 리셋하면 첫 가발 트라우마도 다시 1회 가능
+    firstWigTraumaPlayed = false;
+    firstDressTraumaPlayed = false;
+  });
+
+  /* =======================
+     ✅ 가발 애벌레 트라우마 연출(시각만)
+     - 사운드는 여기서 재생하지 않음 (중복 방지)
+  ======================= */
+  function triggerWigCaterpillar(wigSrc){
+    const wrapper = document.getElementById("playerWrapper");
+    if (!wrapper) return;
+
+    const old = document.getElementById("wigCaterpillarFx");
+    if (old) old.remove();
+
+    const fx = document.createElement("div");
+    fx.id = "wigCaterpillarFx";
+
+    const segments = 7;
+    const startTop = -18;
+    const gap = 11;
+
+    for(let i=0; i<segments; i++){
+      const img = document.createElement("img");
+      img.src = wigSrc;
+      img.className = "wigSeg";
+      img.style.top = `${startTop + i*gap}%`;
+      fx.appendChild(img);
+    }
+
+    wrapper.appendChild(fx);
+
+    setTimeout(()=> fx.remove(), 850);
+  }
+
+  /* =======================
+     드래그
+  ======================= */
+  let dragImg=null, dragSrc="", offsetX=0, offsetY=0;
+  let activeSlotId=null, activeClearFunc=null;
+
+  function setupDrag(selector, targetId, clearFunc){
+    document.querySelectorAll(selector).forEach(img=>{
+      img.addEventListener("mousedown", e=>{
+        e.preventDefault();
+        dragSrc = img.src;
+
+        const rect = img.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        dragImg = img.cloneNode(true);
+        dragImg.style.position="absolute";
+        dragImg.style.zIndex=999;
+        dragImg.style.left=rect.left+"px";
+        dragImg.style.top=rect.top+"px";
+        dragImg.style.pointerEvents="none";
+
+        document.body.appendChild(dragImg);
+
+        activeSlotId = targetId;
+        activeClearFunc = clearFunc || null;
+      });
+    });
+  }
+
+  document.addEventListener("mousemove", e=>{
+    if(!dragImg) return;
+    dragImg.style.left = (e.clientX-offsetX)+"px";
+    dragImg.style.top  = (e.clientY-offsetY)+"px";
+  });
+
+  document.addEventListener("mouseup", e=>{
+    if(!dragImg) return;
+
+    const R = playerBase.getBoundingClientRect();
+    const inside =
+      e.clientX>R.left && e.clientX<R.right &&
+      e.clientY>R.top  && e.clientY<R.bottom;
+
+    if (inside && activeSlotId){
+  const slot = document.getElementById(activeSlotId);
+  if (slot) {
+    pushHistory();
+    if (activeClearFunc) activeClearFunc();
+    slot.src = dragSrc;
+
+    // ✅ 가발 첫 착용 1회만 트라우마 + 전용 사운드
+    if (activeSlotId === "wearWig") {
+      if (!firstWigTraumaPlayed) {
+        firstWigTraumaPlayed = true;
+
+        triggerWigCaterpillar(dragSrc);
+
+        if (wigTraumaSfx) {
+          wigTraumaSfx.currentTime = 0;
+          wigTraumaSfx.play().catch(()=>{});
+        }
+      }
+      // 가발은 clickSfx 안 씀
+    }
+
+    // ✅ 드레스 첫 착용 트라우마
+    else if (activeSlotId === "wearDress") {
+      if (!firstDressTraumaPlayed) {
+        firstDressTraumaPlayed = true;
+        startDressTrauma();
+      } else {
+        if (clickSfx) {
+          clickSfx.currentTime = 0;
+          clickSfx.play().catch(()=>{});
+        }
+      }
+    }
+
+    // ✅ 상의 첫 착용 트라우마
+    else if (activeSlotId === "wearTop") {
+      if (!firstTopTraumaPlayed) {
+        firstTopTraumaPlayed = true;
+        startTopTrauma();   // 상의용 함수
+      } else {
+        if (clickSfx) {
+          clickSfx.currentTime = 0;
+          clickSfx.play().catch(()=>{});
+        }
+      }
+    }
+
+    // ✅ 나머지(하의/신발/악세)
+    else {
+      if (clickSfx) {
+        clickSfx.currentTime = 0;
+        clickSfx.play().catch(()=>{});
+      }
+    }
+  }
+}
+
+    // 드래그 정리
+    dragImg.remove();
+    dragImg=null;
+    dragSrc="";
+    activeSlotId=null;
+    activeClearFunc=null;
+  });
+
+  /* 적용 규칙 */
+  setupDrag(".wigImg", "wearWig");
+  setupDrag(".dressImg", "wearDress", ()=>{ wearTop.src=""; wearBottom.src=""; });
+  setupDrag(".topImg", "wearTop", ()=>{ wearDress.src=""; });
+  setupDrag(".bottomImg", "wearBottom", ()=>{ wearDress.src=""; });
+  setupDrag(".shoesImg", "wearShoes");
+  setupDrag(".accImg", "wearAcc");
+
+  /* =======================
+   ✅ 드레스 트라우마 (이미지 버전)
+======================= */
+/* =======================
+   ✅ 드레스 트라우마 (이미지 + 대화)
+======================= */
+const dressTraumaOverlay  = document.getElementById("dressTraumaOverlay");
+const dressTraumaDialogue = document.getElementById("dressTraumaDialogue");
+const dressTraumaName     = document.getElementById("dressTraumaName");
+const dressTraumaText     = document.getElementById("dressTraumaText");
+const dressTraumaImg      = document.getElementById("dressTraumaImg");
+
+let firstDressTraumaPlayed = false;
+let firstTopTraumaPlayed   = false;
+
+function startDressTrauma(){
+  if (!dressTraumaOverlay || !dressTraumaDialogue) return;
+
+    if (dressTraumaImg) {
+    dressTraumaImg.src = "Frame 2087327018.png";  // 네가 원래 쓰던 드레스 트라우마 이미지
+  }
+
+    // ✅ 드레스 트라우마 효과음
+  if (dressTraumaSfx) {
+    dressTraumaSfx.currentTime = 0;
+    dressTraumaSfx.play().catch(()=>{});
+  }
+
+  // ✅ 오버레이 ON
+  dressTraumaOverlay.style.display = "block";
+  dressTraumaDialogue.style.display = "flex";
+
+  const lines = [
+    { name: "원빈", text: "그 멍청한 드레스를 입고 다시 파티에 온다고?" },
+    { name: "원빈", text: "거울도 안 보고 밖에 나오는 거야?" }
+  ];
+
+  let idx = 0;
+  render();
+
+  function render(){
+    dressTraumaName.textContent = lines[idx].name;
+    dressTraumaText.textContent = lines[idx].text;
+  }
+
+  // ✅ 대화창 클릭으로 진행
+  dressTraumaDialogue.onclick = () => {
+    idx++;
+    if (idx >= lines.length){
+      endDressTrauma();
+      return;
+    }
+    render();
+  };
+}
+
+function endDressTrauma(){
+  if (!dressTraumaOverlay || !dressTraumaDialogue) return;
+
+  dressTraumaOverlay.style.display = "none";
+  dressTraumaDialogue.style.display = "none";
+  dressTraumaDialogue.onclick = null;
+}
+
+function startTopTrauma(){   // 🔹 상의 전용 트라우마
+  if (!dressTraumaOverlay || !dressTraumaDialogue) return;
+
+  // 🔹 상의 전용 이미지로 교체
+  if (dressTraumaImg) {
+    dressTraumaImg.src = "Frame 2087327021.png"; // ⭐ 상의용 트라우마 이미지 파일명으로 바꿔줘
+  }
+
+  // 상의도 같은 효과음 쓰거나, 따로 쓰고 싶으면 여기 교체
+  if (dressTraumaSfx) {
+    dressTraumaSfx.currentTime = 0;
+    dressTraumaSfx.play().catch(()=>{});
+  }
+
+  dressTraumaOverlay.style.display = "block";
+  dressTraumaDialogue.style.display = "flex";
+
+  // 🔹 상의 전용 대사
+  const lines = [
+    { name: "남자아이1", text: "옷이 문제가 아니라 네 얼굴을 봐" },
+    { name: "남자아이2", text: "너랑 친해질 생각 없으니까 나한테 아는 척 하지마." }
+  ];
+
+  let idx = 0;
+  render();
+
+  function render(){
+    dressTraumaName.textContent = lines[idx].name;
+    dressTraumaText.textContent = lines[idx].text;
+  }
+
+  dressTraumaDialogue.onclick = () => {
+    idx++;
+    if (idx >= lines.length){
+      endDressTrauma();   // 같은 오버레이라 이 함수 재사용
+      return;
+    }
+    render();
+  };
+}
+
+  /* =======================
+     외출하기 버튼 표시
+  ======================= */
+  function updateGoOutVisibility() {
+    const hasItem =
+      (wearWig.src && wearWig.src.trim() !== "") ||
+      (wearDress.src && wearDress.src.trim() !== "") ||
+      (wearTop.src && wearTop.src.trim() !== "") ||
+      (wearBottom.src && wearBottom.src.trim() !== "") ||
+      (wearShoes.src && wearShoes.src.trim() !== "") ||
+      (wearAcc.src && wearAcc.src.trim() !== "");
+
+    goOutWrapper.style.display = hasItem ? "block" : "none";
+  }
+  setInterval(updateGoOutVisibility, 200);
+
+  /* =======================
+     ✅ 외출하기: 평가 삭제 버전
+  ======================= */
+  function saveOutfitToStorage(){
+    localStorage.setItem("wearWig", wearWig.src || "");
+    localStorage.setItem("wearDress", wearDress.src || "");
+    localStorage.setItem("wearTop", wearTop.src || "");
+    localStorage.setItem("wearBottom", wearBottom.src || "");
+    localStorage.setItem("wearShoes", wearShoes.src || "");
+    localStorage.setItem("wearAcc", wearAcc.src || "");
+  }
+
+  goOutButton.addEventListener("click", ()=>{
+  // 1) 외출 막기 + 알림
+  showGoOutAlert();
+
+  // 2) 3초 뒤에 파멸 엔딩 한 번만 시작
+  if (!doomStarted) {
+    doomStarted = true;
+    setTimeout(() => {
+      startDoomEnding();
+    }, 3000);
+  }
+});
+
+  if (restartButton) {
+  restartButton.addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
+}
+
+</script>
+
+</body>
+</html>
